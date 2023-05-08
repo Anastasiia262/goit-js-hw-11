@@ -49,50 +49,33 @@ function clearGalleryEl() {
 }
 
 async function getImages() {
-  const images = await imagesApiServer.fetchImage();
+  refs.loadMoreBtn.classList.add('is-hidden');
+  const images = await imagesApiServer.fetchImage(imagesApiServer.page);
   appendImagesToGallery(images.hits);
-  refs.loadMoreBtn.classList.remove('is-hidden');
   lightboxGallery.refresh();
+  refs.loadMoreBtn.classList.remove('is-hidden');
   return images;
-}
-
-function scroll() {
-  const { page, pageSize } = imagesApiServer;
-  const targetItemIndex = (page - 1) * pageSize;
-  const targetItem = refs.gallery.children.item(targetItemIndex);
-  const padding = 15;
-  const currentScrollTop = document.documentElement.scrollTop || document.body.scrollTop;
-  const targetItemScreenOffsetTop = targetItem.getBoundingClientRect().top;
-
-  window.scrollTo({
-    top: currentScrollTop + targetItemScreenOffsetTop - padding,
-    behavior: 'smooth',
-  });
 }
 
 async function onFormSubmit(e) {
   e.preventDefault();
   const inputValue = e.currentTarget.elements.searchQuery.value.trim();
   let images;
+  
+  refs.loadMoreBtn.classList.add('is-hidden'); 
+  
   if (!inputValue) {
-    refs.loadMoreBtn.classList.add('is-hidden');
     return;
   }
   
-  if (refs.gallery.innerHTML) {
-    refs.loadMoreBtn.classList.remove('is-hidden');
-  } else {
-    refs.loadMoreBtn.classList.add('is-hidden');
-  }
-
   imagesApiServer.query = inputValue;
   imagesApiServer.resetPage();
   clearGalleryEl();
+  
   try {
     images = await getImages();
 
     if (images.hits.length === 0) {
-      refs.loadMoreBtn.classList.add('is-hidden');
       return Notify.failure(
         'Sorry, there are no images matching your search query. Please try again.'
       );
@@ -107,11 +90,10 @@ async function onFormSubmit(e) {
   if (images.hits.length < imagesApiServer.pageSize) {
     refs.loadMoreBtn.classList.add('is-hidden');
     Notify.failure("We're sorry, but you've reached the end of search results.");
-  } else if (refs.loadMoreBtn.classList.contains('is-hidden')) {
+  } else {
     refs.loadMoreBtn.classList.remove('is-hidden');
   }
 }
-
 
 refs.searchInput.addEventListener('submit', onFormSubmit);
 refs.loadMoreBtn.addEventListener('click', loadMoreImages);
